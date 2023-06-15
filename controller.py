@@ -14,8 +14,8 @@ def bass2angle(bass):
 
 
 #apply calculated angles to servos
-servo_0 = PWM(Pin(23), freq = 50)
-servo_1 = PWM(Pin(24), freq = 50)
+servo_0 = PWM(Pin(32), freq = 50)
+servo_1 = PWM(Pin(33), freq = 50)
 def move_servos(angles):
     servo_0.duty(angles[0])
     servo_1.duty(angles[1])
