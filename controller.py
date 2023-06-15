@@ -68,4 +68,12 @@ def main():
         sleep(1/FPS)
         timer -= 1/FPS
 
-main()
+#main()
+
+def test():
+    i=0
+    while True:
+        move_servos(i%90)
+        sleep(0.1)
+        i+=1
+test()
