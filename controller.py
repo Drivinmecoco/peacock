@@ -73,7 +73,7 @@ def main():
 def test():
     i=0
     while True:
-        move_servos(i%90)
+        move_servos([i%90,i%90])
         sleep(0.1)
         i+=1
 test()
