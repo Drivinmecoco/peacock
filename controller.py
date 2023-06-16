@@ -1,5 +1,5 @@
 from time import sleep
-from machine import Pin,PWM
+from machine import Pin,PWM,ADC
 from neopixel import NeoPixel
 
 #formulas
@@ -34,9 +34,11 @@ def frame(volume,bass):
     move_servos(bass2angle(bass))
 
 #microphone
-microphone = Pin(34, Pin.IN)
+microphone = ADC(Pin(34))
+microphone.atten(ADC.ATTN_11DB)
 def get_volume():
-    return microphone.value()
+    volt = microphone.read()
+    return volt
 
 #bass
 bass_pin = Pin(35, Pin.IN)
@@ -44,36 +46,45 @@ def get_bass():
     return bass_pin.value()
 
 def main():
-    timer = 0
-    FPS = 5
-    min_volume = 1
-    bass = 0
-    volume = 0
-    run = True
+    #timer = 0
+    FPS = 24
+    #bass = 0
 
+    l = 10
+    volumes = [2500 for i in range(l)]#0.1s
+
+
+    run = True
     while run:
         #get sensor input
         volume = get_volume()
-        bass = get_bass()
+        volumes.append(volume)
+
+        dc = sum(volumes)/len(volumes)
+        avg_v = sum(
+            [abs(volumes[i]-dc) for i in range(len(volumes)-1,len(volumes)-l-1,-1)]
+            )/l
+        #bass = get_bass()
+        print(tuple([avg_v,abs(volume-dc)]))
 
         #if you hear a loud sound activate for at least 2s
-        if(volume>min_volume):
-            timer = 2
+        #if(volume>min_volume):
+        #    timer = 2
 
         #as long as you heard a sound 2s ago, keep playing
-        if timer>0:
-            frame(volume,bass)
+        #if timer>0:
+        #    frame(volume,bass)
 
         #frame rate
         sleep(1/FPS)
-        timer -= 1/FPS
+        #timer -= 1/FPS
 
-#main()
+main()
 
+"""
 def test():
-    i=0
     while True:
-        move_servos([i%90,i%90])
-        sleep(0.1)
-        i+=1
-test()
+        #print(tuple([get_volume()]))
+        sleep(0.01)
+#test()
+"""
