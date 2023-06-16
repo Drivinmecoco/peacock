@@ -4,13 +4,13 @@ from neopixel import NeoPixel
 
 #formulas
 def volume2stage(volume):
-    step = 1
+    step = 0.2
     stage = min(volume/step,8)
     return stage
 
 def bass2angle(bass):
-    y = min(int(bass*0.5),90)
-    return [y,y]
+    y = min(int(bass*90),90)
+    return [y,-y]
 
 
 #apply calculated angles to servos
@@ -30,7 +30,7 @@ def light_leds(stage):
 
 #what to do each frame
 def frame(volume,bass):
-    volume2LED(volume)
+    #volume2LED(volume)
     move_servos(bass2angle(bass))
 
 #microphone
@@ -41,17 +41,25 @@ def get_volume():
     return volt
 
 #bass
-bass_pin = Pin(35, Pin.IN)
+bass = ADC(Pin(39))
+bass.atten(ADC.ATTN_11DB)
 def get_bass():
-    return bass_pin.value()
+    volt = bass.read()
+    return volt
+
+def avg(lst,offset,l):
+    return sum(
+        [abs(lst[i]-offset) for i in range(len(lst)-1,len(lst)-l-1,-1)]
+        )/l
 
 def main():
-    #timer = 0
+    timer = 0
     FPS = 24
-    #bass = 0
 
-    l = 10
-    volumes = [2500 for i in range(l)]#0.1s
+    v_l = 5
+    volumes = [2500 for i in range(v_l)]#0.1s
+    b_l = 10
+    basses = [2500 for i in range(b_l)]#0.1s
 
 
     run = True
@@ -60,24 +68,31 @@ def main():
         volume = get_volume()
         volumes.append(volume)
 
-        dc = sum(volumes)/len(volumes)
-        avg_v = sum(
-            [abs(volumes[i]-dc) for i in range(len(volumes)-1,len(volumes)-l-1,-1)]
-            )/l
-        #bass = get_bass()
-        print(tuple([avg_v,abs(volume-dc)]))
+        dc_v = sum(volumes)/len(volumes)
+        avg_v = avg(volumes,dc_v,v_l)
+
+
+        bass_volume = get_bass()
+        basses.append(bass_volume)
+        dc_b = sum(basses)/len(basses)
+        avg_b = avg(basses,dc_b,b_l)
+
+        #print(tuple([avg_v,abs(volume-dc_v)]))
+        #print(tuple([avg_b,abs(bass_volume-dc_b)]))
+        print(tuple([avg_b,avg_v]))
 
         #if you hear a loud sound activate for at least 2s
-        #if(volume>min_volume):
-        #    timer = 2
+        if(avg_v>1):
+            timer = 2
 
         #as long as you heard a sound 2s ago, keep playing
-        #if timer>0:
-        #    frame(volume,bass)
+        if timer>0:
+            pass
+            #frame(avg_v,avg_b)
 
         #frame rate
         sleep(1/FPS)
-        #timer -= 1/FPS
+        timer -= 1/FPS
 
 main()
 
