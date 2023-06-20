@@ -172,13 +172,11 @@ def main():
         if len(basses)>100:
             basses.pop(0)
 
-        print(tuple(bass2angle(avg_b)[1]))
-
         #frame rate
         sleep(1/fps)
         timer -= 1/fps
 
-main()
+#main()
 
 def test():
     """
@@ -186,7 +184,9 @@ def test():
     for debugging.
     """
     print("done")
-    move_servos([0,90])
-    sleep(1)
-    move_servos([90,40])
-#test()
+    for i in range(5)
+        move_servos([10,10])
+        sleep(0.5)
+        move_servos([90,40])
+    print("done")
+test()
