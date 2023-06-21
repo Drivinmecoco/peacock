@@ -3,7 +3,7 @@ from machine import Pin,PWM,ADC
 from neopixel import NeoPixel
 
 
-def display(*args):
+def plot(*args):
     print(tuple(args))
 
 class Voltmeter:
@@ -71,34 +71,34 @@ def main():
     print("start")
     delta_t = 0.01
 
-    voltimeter = Voltmeter()
+    voltmeter = Voltmeter()
     controller = Controller()
 
     run = True
     while run:
         #get sensor input
-        voltimeter.do()
-        volume = voltimeter.ac_applitude_normalized()
+        voltmeter.do()
+        volume = voltmeter.ac_applitude_normalized()
 
         controller.volume2led(volume)
         controller.volume2servos(volume)
 
-        display(volume)
+        plot(volume)
 
         #frame rate
         sleep(delta_t)
 
 
 def test():
-    controller = Controller()
+    voltmeter = Voltmeter()
 
     print("start")
     i=0
     while True:
         sleep(0.01)
         i += 0.1
-        controller.move_servos(int(i%20))
-        display(i%20)
+        voltmeter.do()
+        plot(voltmeter.ac_applitude_normalized())
     print("fin")
 
 
