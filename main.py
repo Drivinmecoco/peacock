@@ -1,2 +1,1 @@
-execfile("test.py")
-#execfile("controller.py")
+execfile("controller.py")
