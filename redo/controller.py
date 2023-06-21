@@ -1,6 +1,7 @@
 from time import sleep
 from machine import Pin,PWM,ADC
 from neopixel import NeoPixel
+from math import sin, pi
 
 
 def plot(*args):
@@ -9,31 +10,46 @@ def plot(*args):
 class Voltmeter:
     def __init__(self):
         self.volt = 0
-        self.voltages = []
-        self.max_ac = 0
-        self.dc_offset = 0
+        self.voltages = [2350 for i in range(5)]
+        self.max_ac = 1
+        self.dc_offset = 2500
+        self.avg = 2500
+        self.ac = 0
+        self.acs = [0]
 
-        self.microphone = ADC(Pin(34))
+        self.microphone = ADC(Pin(39))
         self.microphone.atten(ADC.ATTN_11DB)
+
+        self.count_step = 5
+        self.count = 0
 
     def do(self):
         self.volt = self.microphone.read()
-        self.voltages.append(self.volt)
-        if len(self.voltages)>100:
+        if self.count%self.count_step == 0:
+            self.voltages.append(self.volt)
+
+        self.resize()
+
+        self.dc_offset = max(sum(self.voltages)/len(self.voltages),2200)
+        self.ac_applitude()
+
+        self.count+=1
+
+    def ac_normalized(self):
+        return max(min(self.ac/self.max_ac,1),0)
+
+    def ac_applitude(self):
+        last_few = self.voltages[-20:-1]
+        self.avg = sum(last_few)/len(last_few)
+        self.ac = abs(self.avg - self.dc_offset)
+        self.acs.append(self.ac)
+        self.max_ac = max(self.acs+[1000])
+
+    def resize(self):
+        if len(self.voltages)>200:
             self.voltages.pop(0)
-
-        self.dc_offset = sum(self.voltages)/len(self.voltages)
-        self.max_ac = max(self.voltages)-self.dc_offset
-
-    def ac_applitude_normalized(self):
-        last_few = self.voltages[-5:-1]
-        average = sum(last_few)/len(last_few)
-        ac_current = average - self.dc_offset
-        ac_clip = max(ac_current,0)
-        volume = ac_clip/self.max_ac
-        return volume
-
-
+        if len(self.acs)>200:
+            self.acs.pop(0)
 
 
 
@@ -41,6 +57,9 @@ class Controller():
     def __init__(self):
         self.servo_0 = PWM(Pin(32), freq = 50)
         self.servo_1 = PWM(Pin(33), freq = 50)
+
+        self.angle = 0
+        self.stage = 0
 
         self.led = NeoPixel(Pin(4),8)
 
@@ -59,11 +78,20 @@ class Controller():
         self.led.write()
 
     def volume2led(self,volume):
-        stage = min(int(volume*8),8)
+        sensitivity = 1.2
+
+        stage = min(int(volume*8*sensitivity),8)
+        self.stage = stage
         self.light_leds(stage)
 
     def volume2servos(self,volume):
-        angle = max(min(int(volume*30),30)-10,0)
+        sensitivity = 1.5
+
+        max_a = 40
+
+        #angle = max(min(int(volume*30*sensitivity),30)-10,0)
+        angle = max(min(int(volume*max_a*sensitivity),max_a)-10,0)
+        self.angle = angle
         self.move_servos(angle)
 
 
@@ -78,30 +106,52 @@ def main():
     while run:
         #get sensor input
         voltmeter.do()
-        volume = voltmeter.ac_applitude_normalized()
+        volume = voltmeter.ac_normalized()
 
         controller.volume2led(volume)
         controller.volume2servos(volume)
 
-        plot(volume)
+        plot(volume,controller.angle/90,controller.stage/8)
 
         #frame rate
         sleep(delta_t)
 
 
-def test():
+def cycle():
     voltmeter = Voltmeter()
+    controller = Controller()
+    i=0
+    volume = 0
 
     print("start")
-    i=0
     while True:
         sleep(0.01)
-        i += 0.1
-        voltmeter.do()
-        plot(voltmeter.ac_applitude_normalized())
-    print("fin")
+        controller.volume2servos(volume)
+
+        controller.volume2led(volume)
+        i += 0.01
+        w = 120 #120bpm
+        r = 1/60*1.362*pi
+        volume = 0.5*sin(w*r*i)+0.5
+        plot(volume)
+
+def test():
+    voltmeter = Voltmeter()
+    controller = Controller()
+    i=0
+    volume = 0
+
+    print("start")
+    while True:
+        sleep(0.01)
+        controller.volume2servos(volume)
+
+        controller.volume2led(volume)
+        i += 0.01
+        w = 70/(2*pi)
+        volume = 0.5*sin(w*i)+0.5
+        plot(volume)
 
 
-
-#test()
-main()
+cycle()
+#main()
